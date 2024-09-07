@@ -56,12 +56,16 @@ void RegisterDialog::showTip(QString str, bool ok)
 
 void RegisterDialog::on_verify_btn_clicked()
 {
-    auto email = ui->email_label->text();
+    auto email = ui->email_edit->text();
     QRegularExpression regex(R"((\w+)(\.|_)?(\w*)@(\w+)(\.(\w+))+)");
     bool match = regex.match(email).hasMatch();
 
     if (match) {
         //send http validation code
+        QJsonObject jsonObj;
+        jsonObj["email"] = email;
+        HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix + "/get_verifycode"), jsonObj, ReqId::ID_GET_VERIFY_CODE, Modules::REGISTERMOD);
+
 
     } else {
         showTip(tr("email address is not correct"), false);

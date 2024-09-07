@@ -18,11 +18,11 @@ class HttpMgr : public QObject,
 public:
     ~HttpMgr();
 
+    void PostHttpReq(QUrl url,QJsonObject json, ReqId req_id, Modules mod);
+
 private:
     friend class Singleton<HttpMgr>;
     HttpMgr();
-
-    void PostHttpReq(QUrl url,QJsonObject json, ReqId req_id, Modules mod);
 
 private slots:
     void slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mod);
