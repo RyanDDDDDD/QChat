@@ -39,3 +39,18 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     rc.qrc
+
+DISTFILES += \
+    config.ini
+
+win32:CONFIG(debug, debug | release)
+{
+    TargetConfig = $${PWD}/config.ini
+    TargetConfig = $$replace(TargetConfig, /, \\)
+
+    OutputDir =  $${OUT_PWD}/$${DESTDIR}
+    OutputDir = $$replace(OutputDir, /, \\)
+
+    # copy config.ini into bin folder
+    QMAKE_POST_LINK += cp \"$$TargetConfig\" \"$$OutputDir\"
+}

@@ -122,7 +122,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="lineEdit">
+            <widget class="QLineEdit" name="email_edit">
              <property name="minimumSize">
               <size>
                <width>0</width>

@@ -11,6 +11,10 @@
 #include <QRegularExpression>
 #include <QByteArray>
 #include <QNetworkReply>
+#include <QJsonObject>
+#include <QDir>
+#include <QSettings>
+#include <QDebug>
 
 /**
  * @brief repolish
@@ -30,9 +34,9 @@ enum ErrorCodes{
     SUCCESS             = 0,
     ERR_JSON            = 1, // json parsing failed
     ERR_NETWORK         = 2, // network error
-
-
 };
+
+extern QString gate_url_prefix;
 
 
 #endif // GLOBAL_H

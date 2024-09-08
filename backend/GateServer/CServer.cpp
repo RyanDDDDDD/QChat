@@ -19,8 +19,12 @@ void CServer::Start() {
 				self->Start();
 				return;
 			}
-
+			
+			//handle current http request
 			std::make_shared<HttpConnection>(std::move(self->_socket))->Start();
+			
+			//listen next request
+			self->Start();
 		}
 		catch (std::exception& exp) {
 			std::cerr << "exception is " << exp.what() << std::endl;
