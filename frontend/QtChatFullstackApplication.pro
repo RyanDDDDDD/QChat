@@ -52,5 +52,5 @@ win32:CONFIG(debug, debug | release)
     OutputDir = $$replace(OutputDir, /, \\)
 
     # copy config.ini into bin folder
-    QMAKE_POST_LINK += cp /Y \"$$TargetConfig\" \"$$OutputDir\"
+    QMAKE_POST_LINK += cp \"$$TargetConfig\" \"$$OutputDir\"
 }
