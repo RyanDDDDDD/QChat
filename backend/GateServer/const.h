@@ -10,12 +10,15 @@
 #include <json/value.h>
 #include <json/reader.h>
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <functional>
 #include <map>
 #include <unordered_map>
 #include <string>
+#include <queue>
+#include <condition_variable>
 
 #include "Singleton.h"
 
@@ -29,6 +32,3 @@ enum ErrorCodes {
 	Error_Json = 1001,
 	RPCFailed = 1002
 };
-
-class ConfigMgr;
-extern ConfigMgr gCfgMgr;
