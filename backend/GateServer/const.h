@@ -10,6 +10,8 @@
 #include <json/value.h>
 #include <json/reader.h>
 
+#include <hiredis/hiredis.h>
+
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -19,6 +21,7 @@
 #include <string>
 #include <queue>
 #include <condition_variable>
+#include <cassert>
 
 #include "Singleton.h"
 
