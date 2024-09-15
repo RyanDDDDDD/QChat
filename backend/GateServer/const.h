@@ -31,7 +31,28 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 enum ErrorCodes {
-	Success = 0,
-	Error_Json = 1001,
-	RPCFailed = 1002
+	Success			= 0,
+	Error_Json		= 1001,	//	Json parsing error
+	RPCFailed		= 1002,	//	RRC request failed
+	VerifyExpired	= 1003, //	authentication code expired
+	VerifyCodeErr	= 1004, //	authentication code error
+	UserExist		= 1005, //	user exist
+	PasswdErr		= 1006, //	password error
+	EmailNotMatch	= 1007, //	email not matched
+	PasswdUpFailed	= 1008, //	Password update failed
+	PasswdInvalid	= 1009, //	Password invalid
+};
+
+#define CODEPREFIX "code_"
+
+class Defer {
+public:
+	Defer(std::function<void()> func): func_(func) {}
+
+	~Defer() {
+		func_();
+	}
+
+private:
+	std::function<void()> func_;
 };

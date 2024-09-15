@@ -6,6 +6,10 @@
     <IncludePath>C:\Software\vcpkg\installed\x64-windows\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Software\vcpkg\installed\x64-windows\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalDependencies>mysqlcppconn.lib;mysqlcppconnx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

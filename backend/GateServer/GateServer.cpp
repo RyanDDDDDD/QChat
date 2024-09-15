@@ -126,8 +126,8 @@ void TestRedis() {
 int main()
 {
 	//TestRedis();
-	TestRedisMgr();
-	/*std::string gate_port_str = ConfigMgr::Instance()["GateServer"]["Port"];
+	//TestRedisMgr();
+	std::string gate_port_str = ConfigMgr::Instance()["GateServer"]["Port"];
 	unsigned short gate_port = atoi(gate_port_str.c_str());
 
 	try {
@@ -149,6 +149,5 @@ int main()
 	catch (std::exception const& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
-	}*/
-
+	}
 }
