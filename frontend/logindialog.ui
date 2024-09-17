@@ -39,6 +39,9 @@
           <property name="pixmap">
            <pixmap resource="rc.qrc">:/res/ice.png</pixmap>
           </property>
+          <property name="scaledContents">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
        </layout>

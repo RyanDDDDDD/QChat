@@ -31,12 +31,8 @@ public:
 
 public slots:
     void SlotSwitchReg();
-
-private:
-    void setUpContent();
-    void setUpLogin();
-    void setUpRegister();
-    void setUiConnection();
+    void SlotSwitchLogin();
+    void SlotSwitchReset();
 
 private:
     Ui::MainWindow* ui;
