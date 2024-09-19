@@ -25,10 +25,15 @@ extern std::function<QString(QString)> xorString;
 enum ReqId{
     ID_GET_VERIFY_CODE  = 1001, // get validation code
     ID_REG_USER         = 1002, // user registeration
+    ID_RESET_PWD        = 1003, // reset password
+    ID_LOGIN_USER       = 1004, // user login
+    ID_CHAT_LOGIN       = 1005, // login chat server
+    ID_CHAT_LOGIN_RSP   = 1006, // response package from server
 };
 
 enum Modules{
     REGISTERMOD         = 0,
+    RESETMOD            = 1
 };
 
 enum ErrorCodes{

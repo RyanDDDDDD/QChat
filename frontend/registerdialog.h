@@ -36,10 +36,12 @@ signals:
 
 private slots:
     void on_verify_btn_clicked();
+
     void slot_reg_mod_finish(ReqId id, QString res, ErrorCodes err);
 
     void on_confirm_btn_clicked();
-    void on_pushButton_clicked();
+    void on_return_btn_clicked();
+    void on_cancel_btn_clicked();
 
 private:
     Ui::RegisterDialog *ui;

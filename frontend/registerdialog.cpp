@@ -24,7 +24,7 @@ RegisterDialog::RegisterDialog(QWidget *parent)
     connect(ui->email_edit, &QLineEdit::editingFinished, this, [this]{checkEmailValid();});
     connect(ui->password_edit, &QLineEdit::editingFinished, this, [this]{checkPassValid();});
     connect(ui->confirm_edit, &QLineEdit::editingFinished, this, [this]{checkConfirmValid();});
-    connect(ui->code_edit, &QLineEdit::editingFinished, this, [this]{checkVerifyValid();});
+    connect(ui->verify_edit, &QLineEdit::editingFinished, this, [this]{checkVerifyValid();});
 
     ui->password_visible->setCursor(Qt::PointingHandCursor);
     ui->confirm_visible->setCursor(Qt::PointingHandCursor);
@@ -225,7 +225,7 @@ bool RegisterDialog::checkConfirmValid()
 
 bool RegisterDialog::checkVerifyValid()
 {
-    auto pass = ui->code_edit->text();
+    auto pass = ui->verify_edit->text();
     if(pass.isEmpty()){
         AddTipErr(TipErr::TIP_VERIFY_ERR, tr("auth code is empty!!!"));
         return false;
@@ -310,7 +310,7 @@ void RegisterDialog::on_confirm_btn_clicked()
         showTip(tr("Password and Password confirm does not match"), false);
         return;
     }
-    if(ui->code_edit->text() == ""){
+    if(ui->verify_edit->text() == ""){
         showTip(tr("Verification code is empty"), false);
         return;
     }
@@ -321,13 +321,18 @@ void RegisterDialog::on_confirm_btn_clicked()
     json_obj["email"] = ui->email_edit->text();
     json_obj["passwd"] = xorString(ui->password_edit->text());
     json_obj["confirm"] = xorString(ui->confirm_edit->text());
-    json_obj["verifycode"] = ui->code_edit->text();
+    json_obj["verifycode"] = ui->verify_edit->text();
     HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix+"/user_register"),
                                         json_obj, ReqId::ID_REG_USER, Modules::REGISTERMOD);
 }
 
-void RegisterDialog::on_pushButton_clicked()
+void RegisterDialog::on_return_btn_clicked()
 {
+    _countdown_timer->stop();
+    emit sigSwitchLogin();
+}
+
+void RegisterDialog::on_cancel_btn_clicked(){
     _countdown_timer->stop();
     emit sigSwitchLogin();
 }

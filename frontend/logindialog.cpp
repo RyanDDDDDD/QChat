@@ -9,9 +9,18 @@ LoginDialog::LoginDialog(QWidget *parent)
 
     connect(ui->regist_btn, &QPushButton::clicked, this, &LoginDialog::switchRegister);
 
+    ui->forget_pwd_label->SetState("normal", "hover", "", "selected", "selected_hover", "");
+
+    connect(ui->forget_pwd_label, &ClickedLabel::clicked, this, &LoginDialog::slot_forget_pwd);
 }
 
 LoginDialog::~LoginDialog()
 {
     delete ui;
+}
+
+void LoginDialog::slot_forget_pwd()
+{
+    qDebug() << "slot forget pwd";
+    emit switchReset();
 }

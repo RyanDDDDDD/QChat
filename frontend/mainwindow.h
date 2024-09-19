@@ -14,6 +14,7 @@
 #include <QMainWindow>
 #include "logindialog.h"
 #include "registerdialog.h"
+#include "resetdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,11 +33,13 @@ public:
 public slots:
     void SlotSwitchReg();
     void SlotSwitchLogin();
+    void SlotSwitchLogin2();
     void SlotSwitchReset();
 
 private:
     Ui::MainWindow* ui;
     LoginDialog*    _login;
     RegisterDialog* _regis;
+    ResetDialog*    _reset;
 };
 #endif // MAINWINDOW_H
