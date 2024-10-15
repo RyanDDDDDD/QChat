@@ -54,6 +54,6 @@ void HttpMgr::slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mo
 
     if (mod == Modules::LOGINMOD){
         //notify login module user login is finished
-        // emit sig_reset_mod_finish(id, res, err);
+        emit sig_login_mod_finish(id, res, err);
     }
 }
