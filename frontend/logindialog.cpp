@@ -1,6 +1,7 @@
 #include "logindialog.h"
 #include "ui_logindialog.h"
 #include "httpmgr.h"
+#include "tcpmgr.h"
 
 #include <QPixmap>
 #include <QPainter>
@@ -21,6 +22,10 @@ LoginDialog::LoginDialog(QWidget *parent)
     initHttpHandler();
     connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_login_mod_finish,
             this, &LoginDialog::slot_login_mod_finish);
+
+    connect(this, &LoginDialog::sig_connect_tcp, TcpMgr::GetInstance().get(), &TcpMgr::slot_tcp_connect);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_con_success, this, &LoginDialog::slot_tcp_con_finish);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_login_failed, this, &LoginDialog::slot_tcp_con_failed);
 }
 
 LoginDialog::~LoginDialog()
@@ -199,5 +204,32 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
 
     _handlers[id](jsonDoc.object());
     return;
+}
+
+void LoginDialog::slot_tcp_con_finish(bool success)
+{
+    if (!success) {
+        showTip(tr("Network error"), false);
+        enableBtn(true);
+        return;
+    }
+
+    showTip(tr("Char server connected"), true);
+    QJsonObject jsonObj;
+    jsonObj["uid"] = _uid;
+    jsonObj["token"] = _token;
+
+    QJsonDocument doc(jsonObj);
+    QString jsonString = doc.toJson(QJsonDocument::Indented);
+
+    TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonString);
+}
+
+void LoginDialog::slot_tcp_con_failed(int err)
+{
+    QString result = QString("Login failed, err is %1").arg(err);
+
+    showTip(result, false);
+    enableBtn(false);
 }
 
