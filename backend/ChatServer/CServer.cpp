@@ -2,34 +2,40 @@
 #include "HttpConnection.h"
 #include "AsioIOServicePool.h"
 
-CServer::CServer(boost::asio::io_context& ioc, unsigned short& port)
-	:_ioc(ioc),
-	_acceptor(ioc, tcp::endpoint(tcp::v4(), port))
+CServer::CServer(boost::asio::io_context& io_context, unsigned short& port)
+	:_io_context(io_context),
+	_port(port),
+	_acceptor(io_context, tcp::endpoint(tcp::v4(), port))
 {
-
+	std::cout << "Server start successfully, list on port: " << _port << std::endl;
+	StartAccept();
 };
 
-void CServer::Start() {
-	auto self = shared_from_this();
-	auto& io_context = AsioIOServicePool::GetInstance()->GetIOService();
-	std::shared_ptr<HttpConnection> new_con = std::make_shared<HttpConnection>(io_context);
+CServer::~CServer() {
+	std::cout << "Server deconstruct, list on port: " << _port << std::endl;
+}
 
-	_acceptor.async_accept(new_con->GetSocket(), [self, new_con](beast::error_code ec) {
-		try {
-			//error in connection, try listen other connection
-			if (ec) {
-				self->Start();
-				return;
-			}
-			
-			//handle current http request
-			new_con->Start();
-			
-			//listen next request
-			self->Start();
-		}
-		catch (std::exception& exp) {
-			std::cerr << "exception is " << exp.what() << std::endl;
-		}
-	});
+void CServer::HandleAccept(shared_ptr<CSession> new_session, const boost::system::error_code& error) {
+	if (!error) {
+		new_session->Start();
+		std::lock_guard<mutex> lock(_mutex);
+		_sessions.insert(std::make_pair(new_session->GetUuid(), new_session));
+	}
+	else {
+		std::cout << "session accept failed, error is " << error.what() << std::endl;
+	}
+
+	StartAccept();
+}
+
+void CServer::StartAccept() {
+	auto& io_context = AsioIOServicePool::GetInstance()->GetIOService();
+	std::shared_ptr<CSession> new_session = std::make_shared<CSession>(io_context, this);
+
+	_acceptor.async_accept(new_session->GetSocket(), std::bind(&CServer::HandleAccept, this, new_session, placeholders::_1));
+}
+
+void CServer::ClearSession(std::string uuid) {
+	std::lock_guard lock(_mutex);
+	_sessions.erase(uuid);
 }

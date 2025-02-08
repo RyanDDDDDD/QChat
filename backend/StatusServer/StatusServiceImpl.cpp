@@ -11,9 +11,10 @@ std::string generate_unique_string() {
     std::string unique_string = to_string(uuid);
     return unique_string;
 }
+
 Status StatusServiceImpl::GetChatServer(ServerContext* context, const GetChatServerReq* request, GetChatServerRsp* reply)
 {
-    std::string prefix("llfc status server has received :  ");
+    std::string prefix("Status server has received :  ");
     const auto& server = getChatServer();
     reply->set_host(server.host);
     reply->set_port(server.port);

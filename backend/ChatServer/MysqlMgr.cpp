@@ -6,6 +6,10 @@ MysqlMgr::MysqlMgr() {
 MysqlMgr::~MysqlMgr() {
 }
 
+std::shared_ptr<UserInfo> MysqlMgr::GetUser(int uid) {
+    return _dao.GetUser(uid);
+}
+
 int MysqlMgr::RegUser(const std::string& name, const std::string& email, const std::string& pwd)
 {
     return _dao.RegUser(name, email, pwd);

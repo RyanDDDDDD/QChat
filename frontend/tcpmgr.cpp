@@ -1,7 +1,7 @@
 #include "tcpmgr.h"
 #include <QAbstractSocket>
 #include <QJsonDocument>
-// #include "usermgr.h"
+#include "usermgr.h"
 
 TcpMgr::~TcpMgr()
 {
@@ -108,9 +108,22 @@ void TcpMgr::initHandler()
             return;
         }
 
-        // UserMgr::GetInstance()->SetUid(jsonObj["uid"].toInt());
-        // UserMgr::GetInstance()->SetName(jsonObj["name"].toString());
-        // UserMgr::GetInstance()->SetToken(jsonObj["token"].toString());
+        int err = jsonObj["error"].toInt();
+        if(err != ErrorCodes::SUCCESS){
+            qDebug() << "Login Failed, err is " << err ;
+            emit sig_login_failed(err);
+            return;
+        }
+
+        auto uid = jsonObj["uid"].toInt();
+        auto name = jsonObj["name"].toString();
+        auto nick = jsonObj["nick"].toString();
+        auto icon = jsonObj["icon"].toString();
+        auto sex = jsonObj["sex"].toInt();
+        auto user_info = std::make_shared<UserInfo>(uid, name, nick, icon, sex);
+
+        UserMgr::GetInstance()->SetUserInfo(user_info);
+        UserMgr::GetInstance()->SetToken(jsonObj["token"].toString());
 
         emit sig_switch_chatdlg();
     });
@@ -156,5 +169,4 @@ void TcpMgr::slot_send_data(ReqId reqId, QString data)
 
     _socket.write(block);
 }
-
 

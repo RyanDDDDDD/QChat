@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <boost/beast/http.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
@@ -30,6 +30,34 @@ namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+
+#define MAX_LENGTH  1024*2
+//header length
+#define HEAD_TOTAL_LEN 4
+//header id length
+#define HEAD_ID_LEN 2
+//header data length
+#define HEAD_DATA_LEN 2
+#define MAX_RECVQUE  10000
+#define MAX_SENDQUE 1000
+
+
+enum MSG_IDS {
+	MSG_CHAT_LOGIN = 1005, //login msg
+	MSG_CHAT_LOGIN_RSP = 1006, //�û���½�ذ�
+	ID_SEARCH_USER_REQ = 1007, //�û���������
+	ID_SEARCH_USER_RSP = 1008, //�����û��ذ�
+	ID_ADD_FRIEND_REQ = 1009, //�������Ӻ�������
+	ID_ADD_FRIEND_RSP = 1010, //�������Ӻ��ѻظ�
+	ID_NOTIFY_ADD_FRIEND_REQ = 1011,  //֪ͨ�û����Ӻ�������
+	ID_AUTH_FRIEND_REQ = 1013,  //��֤��������
+	ID_AUTH_FRIEND_RSP = 1014,  //��֤���ѻظ�
+	ID_NOTIFY_AUTH_FRIEND_REQ = 1015, //֪ͨ�û���֤��������
+	ID_TEXT_CHAT_MSG_REQ = 1017, //�ı�������Ϣ����
+	ID_TEXT_CHAT_MSG_RSP = 1018, //�ı�������Ϣ�ظ�
+	ID_NOTIFY_TEXT_CHAT_MSG_REQ = 1019, //֪ͨ�û��ı�������Ϣ
+};
+
 enum ErrorCodes {
 	Success			= 0,
 	Error_Json		= 1001,	//	Json parsing error
@@ -41,9 +69,9 @@ enum ErrorCodes {
 	EmailNotMatch	= 1007, //	email not matched
 	PasswdUpFailed	= 1008, //	Password update failed
 	PasswdInvalid	= 1009, //	Password invalid
+	TokenInvalid = 1010,	//Token invalid
+	UidInvalid = 1011,		//uid invalid
 };
-
-#define CODEPREFIX "code_"
 
 class Defer {
 public:
@@ -56,3 +84,11 @@ public:
 private:
 	std::function<void()> func_;
 };
+
+#define CODEPREFIX "code_"
+#define USERIPPREFIX  "uip_"
+#define USERTOKENPREFIX  "utoken_"
+#define IPCOUNTPREFIX  "ipcount_"
+#define USER_BASE_INFO "ubaseinfo_"
+#define LOGIN_COUNT  "logincount"
+#define NAME_INFO  "nameinfo_"

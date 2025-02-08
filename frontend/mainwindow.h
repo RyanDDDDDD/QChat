@@ -15,6 +15,7 @@
 #include "logindialog.h"
 #include "registerdialog.h"
 #include "resetdialog.h"
+#include "chatdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -35,11 +36,14 @@ public slots:
     void SlotSwitchLogin();
     void SlotSwitchLogin2();
     void SlotSwitchReset();
+    void SlotSwitchChat();
 
 private:
     Ui::MainWindow* ui;
     LoginDialog*    _login;
     RegisterDialog* _regis;
     ResetDialog*    _reset;
+    ChatDialog*     _chat;
+
 };
 #endif // MAINWINDOW_H

@@ -40,7 +40,7 @@
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="StatusServiceImpl.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

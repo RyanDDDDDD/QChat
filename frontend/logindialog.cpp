@@ -222,7 +222,7 @@ void LoginDialog::slot_tcp_con_finish(bool success)
     QJsonDocument doc(jsonObj);
     QString jsonString = doc.toJson(QJsonDocument::Indented);
 
-    TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonString);
+    emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonString);
 }
 
 void LoginDialog::slot_tcp_con_failed(int err)
