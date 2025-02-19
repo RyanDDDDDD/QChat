@@ -19,9 +19,11 @@ public:
                   QString select = "", QString select_hover = "", QString select_press = "");
 
     ClickedState GetCurState();
+    bool SetCurState(ClickedState state);
+    void ResetNormalState();
 
 signals:
-    void clicked(void);
+    void clicked(QString, ClickedState);
 
 private:
     QString _normal;

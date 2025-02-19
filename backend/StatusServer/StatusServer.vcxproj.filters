@@ -42,6 +42,9 @@
     <ClCompile Include="StatusServiceImpl.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
+    <ClCompile Include="ChatGrpcClient.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StatusServiceImpl.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MysqlDao.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatGrpcClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

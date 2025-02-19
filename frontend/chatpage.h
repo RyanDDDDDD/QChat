@@ -15,14 +15,17 @@ class ChatPage : public QWidget
 public:
     explicit ChatPage(QWidget *parent = nullptr);
     ~ChatPage();
-
+    void SetUserInfo(std::shared_ptr<UserInfo> user_info);
+    void AppendChatMsg(std::shared_ptr<TextChatData> msg);
 protected:
-    void paintEvent(QPaintEvent* event);
-
+    void paintEvent(QPaintEvent *event);
 private slots:
     void on_send_btn_clicked();
 
+    void on_receive_btn_clicked();
+
 private:
+    void clearItems();
     Ui::ChatPage *ui;
     std::shared_ptr<UserInfo> _user_info;
     QMap<QString, QWidget*>  _bubble_map;

@@ -2,10 +2,10 @@
 #include<QScrollBar>
 #include "adduseritem.h"
 // #include "invaliditem.h"
-// #include "findsuccessdlg.h"
+#include "findsuccessdlg.h"
 #include "tcpmgr.h"
-// #include "customizeedit.h"
-// #include "findfaildlg.h"
+#include "customizededit.h"
+#include "findfaildlg.h"
 #include "loadingdlg.h"
 #include "userdata.h"
 #include "usermgr.h"
@@ -71,67 +71,68 @@ void SearchList::addTipItem()
 
 void SearchList::slot_item_clicked(QListWidgetItem *item)
 {
-    // QWidget *widget = this->itemWidget(item);
-    // if(!widget){
-    //     qDebug()<< "slot item clicked widget is nullptr";
-    //     return;
-    // }
+    QWidget *widget = this->itemWidget(item);
+    if(!widget){
+        qDebug()<< "slot item clicked widget is nullptr";
+        return;
+    }
 
-    // ListItemBase *customItem = qobject_cast<ListItemBase*>(widget);
-    // if(!customItem){
-    //     qDebug()<< "slot item clicked widget is nullptr";
-    //     return;
-    // }
+    ListItemBase *customItem = qobject_cast<ListItemBase*>(widget);
+    if(!customItem){
+        qDebug()<< "slot item clicked widget is nullptr";
+        return;
+    }
 
-    // auto itemType = customItem->GetItemType();
-    // if(itemType == ListItemType::INVALID_ITEM){
-    //     qDebug()<< "slot invalid item clicked ";
-    //     return;
-    // }
+    auto itemType = customItem->GetItemType();
+    if(itemType == ListItemType::INVALID_ITEM){
+        qDebug()<< "slot invalid item clicked ";
+        return;
+    }
 
-    // if(itemType == ListItemType::ADD_USER_TIP_ITEM){
+    if(itemType == ListItemType::ADD_USER_TIP_ITEM){
+        if (_send_pending) {
+            return;
+        }
 
-    //     if (_send_pending) {
-    //         return;
-    //     }
+        if (!_search_edit) {
+            return;
+        }
 
-    //     if (!_search_edit) {
-    //         return;
-    //     }
-    //     waitPending(true);
-    //     auto search_edit = dynamic_cast<CustomizeEdit*>(_search_edit);
-    //     auto uid_str = search_edit->text();
-    //     QJsonObject jsonObj;
-    //     jsonObj["uid"] = uid_str;
+        waitPending(true);
+        auto search_edit = dynamic_cast<CustomizedEdit*>(_search_edit);
+        auto uid_str = search_edit->text();
+        QJsonObject jsonObj;
+        jsonObj["uid"] = uid_str;
 
-    //     QJsonDocument doc(jsonObj);
-    //     QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+        QJsonDocument doc(jsonObj);
+        QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
-    //     emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_SEARCH_USER_REQ, jsonData);
-    //     return;
-    // }
+        emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_SEARCH_USER_REQ, jsonData);
+        return;
+    }
 
-    // CloseFindDlg();
+    CloseFindDlg();
 }
 
 void SearchList::slot_user_search(std::shared_ptr<SearchInfo> si)
 {
-    // waitPending(false);
-    // if (si == nullptr) {
-    //     _find_dlg = std::make_shared<FindFailDlg>(this);
-    // }else{
-    //     auto self_uid = UserMgr::GetInstance()->GetUid();
-    //     if (si->_uid == self_uid) {
-    //         return;
-    //     }
-    //     bool bExist = UserMgr::GetInstance()->CheckFriendById(si->_uid);
-    //     if(bExist){
-    //         emit sig_jump_chat_item(si);
-    //         return;
-    //     }
-    //     _find_dlg = std::make_shared<FindSuccessDlg>(this);
-    //     dynamic_pointer_cast<FindSuccessDlg>(_find_dlg)->SetSearchInfo(si);
+    waitPending(false);
+    if (si == nullptr) {
+        _find_dlg = std::make_shared<FindFailDlg>(this);
+    }
+    else {
+        auto self_uid = UserMgr::GetInstance()->GetUid();
+        if (si->_uid == self_uid) {
+            return;
+        }
+        bool bExist = UserMgr::GetInstance()->CheckFriendById(si->_uid);
+        if(bExist){
+            emit sig_jump_chat_item(si);
+            return;
+        }
+        _find_dlg = std::make_shared<FindSuccessDlg>(this);
+        std::dynamic_pointer_cast<FindSuccessDlg>(_find_dlg)->SetSearchInfo(si);
 
-    // }
-    // _find_dlg->show();
+    }
+    _find_dlg->show();
 }

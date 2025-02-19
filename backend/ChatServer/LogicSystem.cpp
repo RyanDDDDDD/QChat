@@ -3,6 +3,9 @@
 #include "MysqlMgr.h"
 #include "const.h"
 #include "RedisMgr.h"
+#include "UserMgr.h"
+#include "ConfigMgr.h"
+#include "ChatGrpcClient.h"
 
 using namespace std;
 
@@ -94,39 +97,98 @@ void LogicSystem::LoginHandler(shared_ptr<CSession> session, const short& msg_id
 	std::cout << "user login uid is  " << uid << " user token  is "
 		<< token << endl;
 
-	//check with status server to match token
-	auto rsp = StatusGrpcClient::GetInstance()->Login(uid, root["token"].asString());
 	Json::Value  rtvalue;
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, MSG_CHAT_LOGIN_RSP);
-	});
+		});
 
-	rtvalue["error"] = ErrorCodes::Success;
-	if (rsp.error() != ErrorCodes::Success) {
+	//get user token from redis
+	std::string uid_str = std::to_string(uid);
+	std::string token_key = USERTOKENPREFIX + uid_str;
+	std::string token_value = "";
+	bool success = RedisMgr::GetInstance()->Get(token_key, token_value);
+	if (!success) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
 		return;
 	}
 
-	//find user info from memory
-	auto find_iter = _users.find(uid);
-	std::shared_ptr<UserInfo> user_info = nullptr;
-	if (find_iter == _users.end()) {
-		//query DB
-		user_info = MysqlMgr::GetInstance()->GetUser(uid);
-		if (user_info == nullptr) {
-			rtvalue["error"] = ErrorCodes::UidInvalid;
-			return;
-		}
-
-		_users[uid] = user_info;
-	}
-	else {
-		user_info = find_iter->second;
+	if (token_value != token) {
+		rtvalue["error"] = ErrorCodes::TokenInvalid;
+		return;
 	}
 
+	rtvalue["error"] = ErrorCodes::Success;
+
+	std::string base_key = USER_BASE_INFO + uid_str;
+	auto user_info = std::make_shared<UserInfo>();
+	bool b_base = GetBaseInfo(base_key, uid, user_info);
+	if (!b_base) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
 	rtvalue["uid"] = uid;
-	rtvalue["token"] = rsp.token();
+	rtvalue["pwd"] = user_info->pwd;
 	rtvalue["name"] = user_info->name;
+	rtvalue["email"] = user_info->email;
+	rtvalue["nick"] = user_info->nick;
+	rtvalue["desc"] = user_info->desc;
+	rtvalue["sex"] = user_info->sex;
+	rtvalue["icon"] = user_info->icon;
+
+	//get apply list from MysqlDB
+	std::vector<std::shared_ptr<ApplyInfo>> apply_list;
+	auto b_apply = GetFriendApplyInfo(uid, apply_list);
+	if (b_apply) {
+		for (auto& apply : apply_list) {
+			Json::Value obj;
+			obj["name"] = apply->_name;
+			obj["uid"] = apply->_uid;
+			obj["icon"] = apply->_icon;
+			obj["nick"] = apply->_nick;
+			obj["sex"] = apply->_sex;
+			obj["desc"] = apply->_desc;
+			obj["status"] = apply->_status;
+			rtvalue["apply_list"].append(obj);
+		}
+	}
+
+	//retrive friend list
+	std::vector<std::shared_ptr<UserInfo>> friend_list;
+	bool b_friend_list = GetFriendList(uid, friend_list);
+	for (auto& friend_ele : friend_list) {
+		Json::Value obj;
+		obj["name"] = friend_ele->name;
+		obj["uid"] = friend_ele->uid;
+		obj["icon"] = friend_ele->icon;
+		obj["nick"] = friend_ele->nick;
+		obj["sex"] = friend_ele->sex;
+		obj["desc"] = friend_ele->desc;
+		obj["back"] = friend_ele->back;
+		rtvalue["friend_list"].append(obj);
+	}
+
+	auto server_name = ConfigMgr::Instance().GetValue("SelfServer", "Name");
+	//increment login count in redis
+	auto rd_res = RedisMgr::GetInstance()->HGet(LOGIN_COUNT, server_name);
+	int count = 0;
+	if (!rd_res.empty()) {
+		count = std::stoi(rd_res);
+	}
+
+	count++;
+	auto count_str = std::to_string(count);
+	RedisMgr::GetInstance()->HSet(LOGIN_COUNT, server_name, count_str);
+	
+	//bind userid with session
+	session->SetUserId(uid);
+
+	//set login server ip for user
+	std::string  ipkey = USERIPPREFIX + uid_str;
+	RedisMgr::GetInstance()->Set(ipkey, server_name);
+	UserMgr::GetInstance()->SetUserSession(uid, session);
+
+	return;
 }
 
 void LogicSystem::SearchInfo(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data)
@@ -142,7 +204,7 @@ void LogicSystem::SearchInfo(std::shared_ptr<CSession> session, const short& msg
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_SEARCH_USER_RSP);
-		});
+	});
 
 	bool b_digit = isPureDigit(uid_str);
 	if (b_digit) {
@@ -172,11 +234,7 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_ADD_FRIEND_RSP);
 		});
-
-	//�ȸ������ݿ�
 	MysqlMgr::GetInstance()->AddFriendApply(uid, touid);
-
-	//��ѯredis ����touid��Ӧ��server ip
 	auto to_str = std::to_string(touid);
 	auto to_ip_key = USERIPPREFIX + to_str;
 	std::string to_ip_value = "";
@@ -185,20 +243,16 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 		return;
 	}
 
-
-	auto& cfg = ConfigMgr::Inst();
+	auto& cfg = ConfigMgr::Instance();
 	auto self_name = cfg["SelfServer"]["Name"];
-
 
 	std::string base_key = USER_BASE_INFO + std::to_string(uid);
 	auto apply_info = std::make_shared<UserInfo>();
 	bool b_info = GetBaseInfo(base_key, uid, apply_info);
 
-	//ֱ��֪ͨ�Է���������Ϣ
 	if (to_ip_value == self_name) {
 		auto session = UserMgr::GetInstance()->GetSession(touid);
 		if (session) {
-			//���ڴ�����ֱ�ӷ���֪ͨ�Է�
 			Json::Value  notify;
 			notify["error"] = ErrorCodes::Success;
 			notify["applyuid"] = uid;
@@ -216,7 +270,6 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 		return;
 	}
 
-
 	AddFriendReq add_req;
 	add_req.set_applyuid(uid);
 	add_req.set_touid(touid);
@@ -228,7 +281,6 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 		add_req.set_nick(apply_info->nick);
 	}
 
-	//����֪ͨ
 	ChatGrpcClient::GetInstance()->NotifyAddFriend(to_ip_value, add_req);
 
 }
@@ -261,19 +313,13 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 		rtvalue["error"] = ErrorCodes::UidInvalid;
 	}
 
-
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_AUTH_FRIEND_RSP);
-		});
+	});
 
-	//�ȸ������ݿ�
 	MysqlMgr::GetInstance()->AuthFriendApply(uid, touid);
-
-	//�������ݿ����Ӻ���
 	MysqlMgr::GetInstance()->AddFriend(uid, touid, back_name);
-
-	//��ѯredis ����touid��Ӧ��server ip
 	auto to_str = std::to_string(touid);
 	auto to_ip_key = USERIPPREFIX + to_str;
 	std::string to_ip_value = "";
@@ -282,13 +328,12 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 		return;
 	}
 
-	auto& cfg = ConfigMgr::Inst();
+	auto& cfg = ConfigMgr::Instance();
 	auto self_name = cfg["SelfServer"]["Name"];
-	//ֱ��֪ͨ�Է�����֤ͨ����Ϣ
+	
 	if (to_ip_value == self_name) {
 		auto session = UserMgr::GetInstance()->GetSession(touid);
 		if (session) {
-			//���ڴ�����ֱ�ӷ���֪ͨ�Է�
 			Json::Value  notify;
 			notify["error"] = ErrorCodes::Success;
 			notify["fromuid"] = uid;
@@ -314,12 +359,9 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 		return;
 	}
 
-
 	AuthFriendReq auth_req;
 	auth_req.set_fromuid(uid);
 	auth_req.set_touid(touid);
-
-	//����֪ͨ
 	ChatGrpcClient::GetInstance()->NotifyAuthFriend(to_ip_value, auth_req);
 }
 
@@ -342,10 +384,8 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_TEXT_CHAT_MSG_RSP);
-		});
+	});
 
-
-	//��ѯredis ����touid��Ӧ��server ip
 	auto to_str = std::to_string(touid);
 	auto to_ip_key = USERIPPREFIX + to_str;
 	std::string to_ip_value = "";
@@ -354,13 +394,12 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		return;
 	}
 
-	auto& cfg = ConfigMgr::Inst();
+	auto& cfg = ConfigMgr::Instance();
 	auto self_name = cfg["SelfServer"]["Name"];
-	//ֱ��֪ͨ�Է�����֤ͨ����Ϣ
+	
 	if (to_ip_value == self_name) {
 		auto session = UserMgr::GetInstance()->GetSession(touid);
 		if (session) {
-			//���ڴ�����ֱ�ӷ���֪ͨ�Է�
 			std::string return_str = rtvalue.toStyledString();
 			session->Send(return_str, ID_NOTIFY_TEXT_CHAT_MSG_REQ);
 		}
@@ -368,10 +407,10 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		return;
 	}
 
-
 	TextChatMsgReq text_msg_req;
 	text_msg_req.set_fromuid(uid);
 	text_msg_req.set_touid(touid);
+
 	for (const auto& txt_obj : arrays) {
 		auto content = txt_obj["content"].asString();
 		auto msgid = txt_obj["msgid"].asString();
@@ -382,15 +421,10 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		text_msg->set_msgcontent(content);
 	}
 
-
-	//����֪ͨ todo...
 	ChatGrpcClient::GetInstance()->NotifyTextChatMsg(to_ip_value, text_msg_req, rtvalue);
 }
 
-
-
-bool LogicSystem::isPureDigit(const std::string& str)
-{
+bool LogicSystem::isPureDigit(const std::string& str) {
 	for (char c : str) {
 		if (!std::isdigit(c)) {
 			return false;
@@ -399,13 +433,10 @@ bool LogicSystem::isPureDigit(const std::string& str)
 	return true;
 }
 
-void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
-{
+void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue) {
 	rtvalue["error"] = ErrorCodes::Success;
 
 	std::string base_key = USER_BASE_INFO + uid_str;
-
-	//���Ȳ�redis�в�ѯ�û���Ϣ
 	std::string info_str = "";
 	bool b_base = RedisMgr::GetInstance()->Get(base_key, info_str);
 	if (b_base) {
@@ -435,16 +466,12 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 	}
 
 	auto uid = std::stoi(uid_str);
-	//redis��û�����ѯmysql
-	//��ѯ���ݿ�
 	std::shared_ptr<UserInfo> user_info = nullptr;
 	user_info = MysqlMgr::GetInstance()->GetUser(uid);
 	if (user_info == nullptr) {
 		rtvalue["error"] = ErrorCodes::UidInvalid;
 		return;
 	}
-
-	//�����ݿ�����д��redis����
 	Json::Value redis_root;
 	redis_root["uid"] = user_info->uid;
 	redis_root["pwd"] = user_info->pwd;
@@ -456,8 +483,6 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 	redis_root["icon"] = user_info->icon;
 
 	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
-
-	//��������
 	rtvalue["uid"] = user_info->uid;
 	rtvalue["pwd"] = user_info->pwd;
 	rtvalue["name"] = user_info->name;
@@ -468,13 +493,10 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 	rtvalue["icon"] = user_info->icon;
 }
 
-void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
-{
+void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue) {
 	rtvalue["error"] = ErrorCodes::Success;
 
 	std::string base_key = NAME_INFO + name;
-
-	//���Ȳ�redis�в�ѯ�û���Ϣ
 	std::string info_str = "";
 	bool b_base = RedisMgr::GetInstance()->Get(base_key, info_str);
 	if (b_base) {
@@ -500,17 +522,12 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 		rtvalue["sex"] = sex;
 		return;
 	}
-
-	//redis��û�����ѯmysql
-	//��ѯ���ݿ�
 	std::shared_ptr<UserInfo> user_info = nullptr;
 	user_info = MysqlMgr::GetInstance()->GetUser(name);
 	if (user_info == nullptr) {
 		rtvalue["error"] = ErrorCodes::UidInvalid;
 		return;
 	}
-
-	//�����ݿ�����д��redis����
 	Json::Value redis_root;
 	redis_root["uid"] = user_info->uid;
 	redis_root["pwd"] = user_info->pwd;
@@ -521,8 +538,6 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 	redis_root["sex"] = user_info->sex;
 
 	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
-
-	//��������
 	rtvalue["uid"] = user_info->uid;
 	rtvalue["pwd"] = user_info->pwd;
 	rtvalue["name"] = user_info->name;
@@ -532,9 +547,7 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 	rtvalue["sex"] = user_info->sex;
 }
 
-bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo)
-{
-	//���Ȳ�redis�в�ѯ�û���Ϣ
+bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo) {
 	std::string info_str = "";
 	bool b_base = RedisMgr::GetInstance()->Get(base_key, info_str);
 	if (b_base) {
@@ -552,9 +565,8 @@ bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 		std::cout << "user login uid is  " << userinfo->uid << " name  is "
 			<< userinfo->name << " pwd is " << userinfo->pwd << " email is " << userinfo->email << endl;
 	}
-	else {
-		//redis��û�����ѯmysql
-		//��ѯ���ݿ�
+	else 
+	{
 		std::shared_ptr<UserInfo> user_info = nullptr;
 		user_info = MysqlMgr::GetInstance()->GetUser(uid);
 		if (user_info == nullptr) {
@@ -562,8 +574,6 @@ bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 		}
 
 		userinfo = user_info;
-
-		//�����ݿ�����д��redis����
 		Json::Value redis_root;
 		redis_root["uid"] = uid;
 		redis_root["pwd"] = userinfo->pwd;
@@ -580,11 +590,9 @@ bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 }
 
 bool LogicSystem::GetFriendApplyInfo(int to_uid, std::vector<std::shared_ptr<ApplyInfo>>& list) {
-	//��mysql��ȡ���������б�
 	return MysqlMgr::GetInstance()->GetApplyList(to_uid, list, 0, 10);
 }
 
 bool LogicSystem::GetFriendList(int self_id, std::vector<std::shared_ptr<UserInfo>>& user_list) {
-	//��mysql��ȡ�����б�
 	return MysqlMgr::GetInstance()->GetFriendList(self_id, user_list);
 }

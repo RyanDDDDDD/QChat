@@ -90,10 +90,18 @@ enum ListItemType {
     SEARCH_USER_ITEM,
     ADD_USER_TIP_ITEM,
     INVALID_ITEM,
-    GROUP_TIP_ITEM
+    GROUP_TIP_ITEM,
+    LINE_ITEM,
+    APPLY_FRIEND_ITEM
 };
 
 const int CHAT_COUNT_PER_PAGE = 13;
+
+const int MIN_APPLY_LABEL_ED_LEN = 40;
+
+const QString add_prefix = "add alias ";
+
+const int  tip_offset = 5;
 
 const std::vector<QString>  strs ={"hello world !",
                                    "nice to meet u",

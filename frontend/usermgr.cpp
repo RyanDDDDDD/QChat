@@ -38,7 +38,6 @@ std::shared_ptr<UserInfo> UserMgr::GetUserInfo()
 
 void UserMgr::AppendApplyList(QJsonArray array)
 {
-    // 遍历 QJsonArray 并输出每个元素
     for (const QJsonValue &value : array) {
         auto name = value["name"].toString();
         auto desc = value["desc"].toString();
@@ -54,7 +53,6 @@ void UserMgr::AppendApplyList(QJsonArray array)
 }
 
 void UserMgr::AppendFriendList(QJsonArray array) {
-    // 遍历 QJsonArray 并输出每个元素
     for (const QJsonValue& value : array) {
         auto name = value["name"].toString();
         auto desc = value["desc"].toString();

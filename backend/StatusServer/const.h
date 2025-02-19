@@ -41,7 +41,8 @@ enum ErrorCodes {
 	EmailNotMatch	= 1007, //	email not matched
 	PasswdUpFailed	= 1008, //	Password update failed
 	PasswdInvalid	= 1009, //	Password invalid
-	UidInvalid		= 1010, // Uid invalid
+	TokenInvalid	= 1010,
+	UidInvalid		= 1011 // Uid invalid
 };
 
 #define CODEPREFIX "code_"
@@ -57,3 +58,9 @@ public:
 private:
 	std::function<void()> func_;
 };
+
+#define USERIPPREFIX  "uip_"
+#define USERTOKENPREFIX  "utoken_"
+#define IPCOUNTPREFIX  "ipcount_"
+#define USER_BASE_INFO "ubaseinfo_"
+#define LOGIN_COUNT  "logincount"
