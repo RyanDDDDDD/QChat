@@ -230,10 +230,12 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 
 	Json::Value  rtvalue;
 	rtvalue["error"] = ErrorCodes::Success;
+	
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_ADD_FRIEND_RSP);
-		});
+	});
+
 	MysqlMgr::GetInstance()->AddFriendApply(uid, touid);
 	auto to_str = std::to_string(touid);
 	auto to_ip_key = USERIPPREFIX + to_str;

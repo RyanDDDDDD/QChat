@@ -48,9 +48,10 @@ AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string server_ip, const AddFri
 	ClientContext context;
 	auto stub = pool->getConnection();
 	Status status = stub->NotifyAddFriend(&context, req, &rsp);
+	
 	Defer defercon([&stub, this, &pool]() {
 		pool->returnConnection(std::move(stub));
-		});
+	});
 
 	if (!status.ok()) {
 		rsp.set_error(ErrorCodes::RPCFailed);

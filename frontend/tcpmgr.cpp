@@ -259,12 +259,14 @@ void TcpMgr::initHandler()
         if (!jsonObj.contains("error")) {
             int err = ErrorCodes::ERR_JSON;
             qDebug() << "Add Friend Failed, err is Json Parse Err" << err;
+            emit sig_login_failed(err);
             return;
         }
 
         int err = jsonObj["error"].toInt();
         if (err != ErrorCodes::SUCCESS) {
             qDebug() << "Add Friend Failed, err is " << err;
+            emit sig_login_failed(err);
             return;
         }
 

@@ -22,7 +22,7 @@ Status ChatServiceImpl::NotifyAddFriend(ServerContext* context, const AddFriendR
 		reply->set_error(ErrorCodes::Success);
 		reply->set_applyuid(request->applyuid());
 		reply->set_touid(request->touid());
-		});
+	});
 
 	//user not in memory
 	if (session == nullptr) {

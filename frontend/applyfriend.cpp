@@ -503,6 +503,7 @@ void ApplyFriend::SlotApplySure()
 void ApplyFriend::SlotApplyCancel()
 {
     qDebug() << "Slot Apply Cancel";
+
     this->hide();
     deleteLater();
 }
